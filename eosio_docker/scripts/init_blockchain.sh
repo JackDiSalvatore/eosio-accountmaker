@@ -101,14 +101,26 @@ echo "=== create user accounts ==="
 cleos system newaccount eosio --transfer dummyaccount EOS8BCgapgYA2L4LJfCzekzeSr3rzgSTUXRXwNi8bNRoz31D14en9 \
 --stake-net "1.0000 EOS" --stake-cpu "1.0000 EOS" --buy-ram-kbytes 8192
 
+cleos system newaccount eosio --transfer accountmaker EOS8BCgapgYA2L4LJfCzekzeSr3rzgSTUXRXwNi8bNRoz31D14en9 \
+--stake-net "1.0000 EOS" --stake-cpu "1.0000 EOS" --buy-ram-kbytes 138675
+
+
+echo "=== give eosio.code permission to accountmaker ==="
+cleos set account permission accountmaker active \
+'{"threshold": 1,"keys": [{"key": "EOS8BCgapgYA2L4LJfCzekzeSr3rzgSTUXRXwNi8bNRoz31D14en9","weight": 1}],"accounts": [{"permission":{"actor":"accountmaker","permission":"eosio.code"},"weight":1}]}' \
+owner -p accountmaker
+
+
 echo "=== deploy smart contract ==="
 # $1 smart contract name
 # $2 account holder name of the smart contract
 # $3 wallet for unlock the account
 # $4 password for unlocking the wallet
 # deploy_contract.sh notechain notechainacc notechainwal $(cat notechain_wallet_password.txt)
+deploy_contract.sh accountmaker accountmaker notechainwal $(cat notechain_wallet_password.txt)
 
 # * Replace the script with different form of data that you would pushed into the blockchain when you start your own project
+run_accountmaker.sh
 
 echo "=== end of setup blockchain accounts and smart contract ==="
 # create a file to indicate the blockchain has been initialized
