@@ -1,0 +1,1 @@
+docker stop eosio_accountmaker_container
