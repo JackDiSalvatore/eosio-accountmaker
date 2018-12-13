@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -o errexit
 
-stop_eosio_docker.sh
-
 # change to script's directory
 cd "$(dirname "$0")/eosio_docker"
 
