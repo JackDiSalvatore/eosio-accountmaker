@@ -1,9 +1,20 @@
-#include "eosio.system.hpp"
+#include <algorithm>
+#include <cmath>
+// #include <boost/optional.hpp>
 #include <eosiolib/asset.hpp>
 #include <eosiolib/time.hpp>
 #include <eosiolib/eosio.hpp>
+#include <eosiolib/public_key.hpp>
+#include <eosiolib/crypto.h>
+
+#include "exchange_state.hpp"
+#include "exchange_state.cpp"
+#include "eosio.token.hpp"
+#include "eosio.system.hpp"
+#include "native.hpp"
 
 #include "abieos_numeric.hpp"
+
 
 #define EOS_SYMBOL symbol("EOS", 4)
 #define RAMCORE_SYMBOL symbol("RAMCORE", 4)
@@ -35,12 +46,12 @@ namespace eosio {
   //   };
   // };
 
-  // asset buyrambytes(uint32_t bytes) {
-  //   eosiosystem::rammarket _rammarket( "eosio"_n, "eosio"_n.value );
-  //   auto itr = _rammarket.find( RAMCORE_SYMBOL.raw() );
-  //   auto tmp = *itr;
-  //   return tmp.convert(asset(bytes, RAM_SYMBOL), EOS_SYMBOL);
-  // }
+  asset buyrambytes(uint32_t bytes) {
+    eosiosystem::rammarket _rammarket( "eosio"_n, "eosio"_n.value );
+    auto itr = _rammarket.find( RAMCORE_SYMBOL.raw() );
+    auto tmp = *itr;
+    return tmp.convert(asset(bytes, RAM_SYMBOL), EOS_SYMBOL);
+  }
 }  /// namspace eosio
 
 using namespace eosio;
@@ -132,18 +143,19 @@ CONTRACT accountmaker : public eosio::contract {
       const auto active_auth = authority{
           1, {{{(uint8_t)abieos::key_type::k1, active_pubkey_char}, 1}}, {}, {}};
 
-      // const auto amount = buyrambytes(3 * 1024);
+      const auto amount = buyrambytes(14 * 1024);
+      print("amount: ", amount, "\n");
       // const auto ram_replace_amount = buyrambytes(256);
       const auto cpu = asset( 1500, EOS_SYMBOL );
       const auto net = asset(  500, EOS_SYMBOL );
 
-      // const auto fee = asset(std::max((quantity.amount + 119) / 200, 1000ll));
-      // print("fee: ", fee, "\n");
-      // eosio_assert( cpu + net + amount + fee + ram_replace_amount <= quantity,
-      //               "Not enough money" );
+      const auto fee = asset(std::max((quantity.amount + 119) / 200, 1000ll), EOS_SYMBOL);
+      print("fee: ", fee, "\n");
+      eosio_assert( cpu + net + amount + fee /*+ ram_replace_amount*/ <= quantity,
+                    "Not enough money" );
 
-      // const auto remaining_balance = quantity - cpu - net - amount - fee - ram_replace_amount;
-      // print("remaining_balance: ", remaining_balance, "\n");
+      const auto remaining_balance = quantity - cpu - net - amount - fee /* - ram_replace_amount*/;
+      print("remaining_balance: ", remaining_balance, "\n");
 
       // create account
       action(
@@ -161,7 +173,7 @@ CONTRACT accountmaker : public eosio::contract {
         permission_level{get_self(),"active"_n},
         "eosio"_n,
         "buyrambytes"_n,
-        std::make_tuple( _self, new_account_name, 8192/*KiB*/ )
+        std::make_tuple( _self, new_account_name, amount/*8192KiB*/ )
       ).send();
       // INLINE_ACTION_SENDER(eosiosystem::system_contract, buyram)
       // (N(eosio), {{_self, N(active)}}, {_self, account_to_create, amount});
@@ -182,19 +194,30 @@ CONTRACT accountmaker : public eosio::contract {
 
       // fee
       // TODO: ADD FEE ACTION HERE
-
+      action(
+        permission_level{get_self(),"active"_n},
+        "eosio.token"_n,
+        "transfer"_n,
+        std::make_tuple( _self, name("chestnutfees"), fee, std::string("account creation fee") )
+      ).send();
       // INLINE_ACTION_SENDER(eosio::token, transfer)
       // (N(eosio.token), {{_self, N(active)}},
       //  {_self, string_to_name("saccountfees"), fee,
       //   std::string("Account creation fee")});
 
-      // if (remaining_balance.amount > 0) {
+      if (remaining_balance.amount > 0) {
+        action(
+          permission_level{get_self(),"active"_n},
+          "eosio.token"_n,
+          "transfer"_n,
+          std::make_tuple( _self, new_account_name, remaining_balance, std::string("initial balance") )
+        ).send();
       //   // transfer remaining balance to new account
       //   INLINE_ACTION_SENDER(eosio::token, transfer)
       //   (N(eosio.token), {{_self, N(active)}},
       //    {_self, account_to_create, remaining_balance,
       //     std::string("Initial balance")});
-      // }
+      }
 
       // eosio_assert(false, "die");
       print("new account '", new_account_name, "' successfully created.");

@@ -104,6 +104,9 @@ cleos system newaccount eosio --transfer dummyaccount EOS8BCgapgYA2L4LJfCzekzeSr
 cleos system newaccount eosio --transfer accountmaker EOS8BCgapgYA2L4LJfCzekzeSr3rzgSTUXRXwNi8bNRoz31D14en9 \
 --stake-net "1.0000 EOS" --stake-cpu "1.0000 EOS" --buy-ram-kbytes 138675
 
+cleos system newaccount eosio --transfer chestnutfees EOS8BCgapgYA2L4LJfCzekzeSr3rzgSTUXRXwNi8bNRoz31D14en9 \
+--stake-net "1.0000 EOS" --stake-cpu "1.0000 EOS" --buy-ram-kbytes 138675
+
 
 echo "=== give eosio.code permission to accountmaker ==="
 cleos set account permission accountmaker active \
